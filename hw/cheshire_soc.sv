@@ -7,12 +7,12 @@
 // Paul Scheffler <paulsc@iis.ee.ethz.ch>
 // Thomas Benz <tbenz@iis.ee.ethz.ch>
 // Alessandro Ottaviano <aottaviano@iis.ee.ethz.ch>
-
-module cheshire_soc import cheshire_pkg::*; #(
+`include "hpdcache_typedef.svh"
+module cheshire_soc import cheshire_pkg::*; import drac_pkg::*, sargantana_icache_pkg::*, mmu_pkg::*; #(
   // Cheshire config
   parameter cheshire_cfg_t Cfg = '0,
   // Debug info for external harts
-  parameter dm::hartinfo_t [iomsb(Cfg.NumExtDbgHarts):0] ExtHartinfo = '0,
+  parameter dm::hartinfo_t[iomsb(Cfg.NumExtDbgHarts):0] ExtHartinfo = '0,
   // Interconnect types (must agree with Cheshire config)
   parameter type axi_ext_llc_req_t  = logic,
   parameter type axi_ext_llc_rsp_t  = logic,
@@ -32,24 +32,24 @@ module cheshire_soc import cheshire_pkg::*; #(
   output axi_ext_llc_req_t axi_llc_mst_req_o,
   input  axi_ext_llc_rsp_t axi_llc_mst_rsp_i,
   // External AXI crossbar ports
-  input  axi_ext_mst_req_t [iomsb(Cfg.AxiExtNumMst):0] axi_ext_mst_req_i,
+  input  axi_ext_mst_req_t[iomsb(Cfg.AxiExtNumMst):0] axi_ext_mst_req_i,
   output axi_ext_mst_rsp_t [iomsb(Cfg.AxiExtNumMst):0] axi_ext_mst_rsp_o,
-  output axi_ext_slv_req_t [iomsb(Cfg.AxiExtNumSlv):0] axi_ext_slv_req_o,
-  input  axi_ext_slv_rsp_t [iomsb(Cfg.AxiExtNumSlv):0] axi_ext_slv_rsp_i,
+  output axi_ext_slv_req_t[iomsb(Cfg.AxiExtNumSlv):0] axi_ext_slv_req_o,
+  input  axi_ext_slv_rsp_t[iomsb(Cfg.AxiExtNumSlv):0] axi_ext_slv_rsp_i,
   // External reg demux slaves
   output reg_ext_req_t [iomsb(Cfg.RegExtNumSlv):0] reg_ext_slv_req_o,
-  input  reg_ext_rsp_t [iomsb(Cfg.RegExtNumSlv):0] reg_ext_slv_rsp_i,
+  input  reg_ext_rsp_t[iomsb(Cfg.RegExtNumSlv):0] reg_ext_slv_rsp_i,
   // Interrupts from and to external targets
-  input  logic [iomsb(Cfg.NumExtInIntrs):0]                                   intr_ext_i,
-  output logic [iomsb(Cfg.NumExtOutIntrTgts):0][iomsb(Cfg.NumExtOutIntrs):0]  intr_ext_o,
+  input  logic[iomsb(Cfg.NumExtInIntrs):0]                                   intr_ext_i,
+  output logic[iomsb(Cfg.NumExtOutIntrTgts):0][iomsb(Cfg.NumExtOutIntrs):0]  intr_ext_o,
   // Interrupt requests to external harts
-  output logic [iomsb(NumIrqCtxts*Cfg.NumExtIrqHarts):0] xeip_ext_o,
+  output logic[iomsb(NumIrqCtxts*Cfg.NumExtIrqHarts):0] xeip_ext_o,
   output logic [iomsb(Cfg.NumExtIrqHarts):0]             mtip_ext_o,
-  output logic [iomsb(Cfg.NumExtIrqHarts):0]             msip_ext_o,
+  output logic[iomsb(Cfg.NumExtIrqHarts):0]             msip_ext_o,
   // Debug interface to external harts
   output logic                                dbg_active_o,
-  output logic [iomsb(Cfg.NumExtDbgHarts):0]  dbg_ext_req_o,
-  input  logic [iomsb(Cfg.NumExtDbgHarts):0]  dbg_ext_unavail_i,
+  output logic[iomsb(Cfg.NumExtDbgHarts):0]  dbg_ext_req_o,
+  input  logic[iomsb(Cfg.NumExtDbgHarts):0]  dbg_ext_unavail_i,
   // JTAG interface
   input  logic  jtag_tck_i,
   input  logic  jtag_trst_ni,
@@ -77,20 +77,20 @@ module cheshire_soc import cheshire_pkg::*; #(
   // SPI host interface
   output logic                  spih_sck_o,
   output logic                  spih_sck_en_o,
-  output logic [SpihNumCs-1:0]  spih_csb_o,
-  output logic [SpihNumCs-1:0]  spih_csb_en_o,
+  output logic[SpihNumCs-1:0]  spih_csb_o,
+  output logic[SpihNumCs-1:0]  spih_csb_en_o,
   output logic [ 3:0]           spih_sd_o,
   output logic [ 3:0]           spih_sd_en_o,
   input  logic [ 3:0]           spih_sd_i,
   // GPIO interface
   input  logic [31:0] gpio_i,
-  output logic [31:0] gpio_o,
+  output logic[31:0] gpio_o,
   output logic [31:0] gpio_en_o,
   // Serial link interface
   input  logic [SlinkNumChan-1:0]                     slink_rcv_clk_i,
   output logic [SlinkNumChan-1:0]                     slink_rcv_clk_o,
   input  logic [SlinkNumChan-1:0][SlinkNumLanes-1:0]  slink_i,
-  output logic [SlinkNumChan-1:0][SlinkNumLanes-1:0]  slink_o,
+  output logic[SlinkNumChan-1:0][SlinkNumLanes-1:0]  slink_o,
   // VGA interface
   output logic                          vga_hsync_o,
   output logic                          vga_vsync_o,
@@ -100,12 +100,12 @@ module cheshire_soc import cheshire_pkg::*; #(
   // USB interface
   input  logic                   usb_clk_i,
   input  logic                   usb_rst_ni,
-  input  logic [UsbNumPorts-1:0] usb_dm_i,
+  input  logic[UsbNumPorts-1:0] usb_dm_i,
   output logic [UsbNumPorts-1:0] usb_dm_o,
   output logic [UsbNumPorts-1:0] usb_dm_oe_o,
   input  logic [UsbNumPorts-1:0] usb_dp_i,
-  output logic [UsbNumPorts-1:0] usb_dp_o,
-  output logic [UsbNumPorts-1:0] usb_dp_oe_o
+  output logic[UsbNumPorts-1:0] usb_dp_o,
+  output logic[UsbNumPorts-1:0] usb_dp_oe_o
 );
 
   `include "axi/typedef.svh"
@@ -132,12 +132,12 @@ module cheshire_soc import cheshire_pkg::*; #(
   // This routable type is as wide or wider than all targets.
   // It must be truncated before target connection.
   typedef struct packed {
-    logic [iomsb(Cfg.NumExtInIntrs):0] ext;
+    logic[iomsb(Cfg.NumExtInIntrs):0] ext;
     cheshire_int_intr_t                intn;
   } cheshire_intr_t;
 
   typedef struct packed {
-    logic [NumClicSysIntrs-1:0] intr;
+    logic[NumClicSysIntrs-1:0] intr;
     cheshire_core_ip_t          core;
   } cheshire_intr_clic_t;
 
@@ -148,8 +148,8 @@ module cheshire_soc import cheshire_pkg::*; #(
   cheshire_intr_t [NumRtdIntrTgts-1:0] intr_routed;
 
   // Interrupt requests to all interruptible harts
-  cheshire_xeip_t [NumIrqHarts-1:0] xeip;
-  logic           [NumIrqHarts-1:0] mtip, msip;
+  cheshire_xeip_t[NumIrqHarts-1:0] xeip;
+  logic[NumIrqHarts-1:0] mtip, msip;
 
   // Interrupt 0 is hardwired to zero by convention.
   // Other internal interrupts are synchronous (for now) and need not be synced;
@@ -210,8 +210,8 @@ module cheshire_soc import cheshire_pkg::*; #(
   } addr_rule_t;
 
   // Generate address map
-  function automatic addr_rule_t [AxiOut.num_rules-1:0] gen_axi_map();
-    addr_rule_t [AxiOut.num_rules-1:0] ret;
+  function automatic addr_rule_t[AxiOut.num_rules-1:0] gen_axi_map();
+    addr_rule_t[AxiOut.num_rules-1:0] ret;
     for (int i = 0; i < AxiOut.num_rules; ++i)
       ret[i] = '{idx: AxiOut.map[i].idx,
           start_addr: AxiOut.map[i].start, end_addr: AxiOut.map[i].pte};
@@ -222,9 +222,9 @@ module cheshire_soc import cheshire_pkg::*; #(
 
   // Connectivity of Xbar
   axi_mst_req_t [AxiIn.num_in-1:0]    axi_in_req, axi_rt_in_req;
-  axi_mst_rsp_t [AxiIn.num_in-1:0]    axi_in_rsp, axi_rt_in_rsp;
+  axi_mst_rsp_t[AxiIn.num_in-1:0]    axi_in_rsp, axi_rt_in_rsp;
   axi_slv_req_t [AxiOut.num_out-1:0]  axi_out_req;
-  axi_slv_rsp_t [AxiOut.num_out-1:0]  axi_out_rsp;
+  axi_slv_rsp_t[AxiOut.num_out-1:0]  axi_out_rsp;
 
   // Configure AXI Xbar
   localparam axi_pkg::xbar_cfg_t AxiXbarCfg = '{
@@ -311,7 +311,7 @@ module cheshire_soc import cheshire_pkg::*; #(
 
   localparam addr_rule_t [RegOut.num_rules-1:0] RegMap = gen_reg_map();
 
-  logic [cf_math_pkg::idx_width(RegOut.num_out)-1:0] reg_select;
+  logic[cf_math_pkg::idx_width(RegOut.num_out)-1:0] reg_select;
 
   axi_slv_req_t axi_reg_amo_req, axi_reg_cut_req;
   axi_slv_rsp_t axi_reg_amo_rsp, axi_reg_cut_rsp;
@@ -321,8 +321,8 @@ module cheshire_soc import cheshire_pkg::*; #(
 
   logic[AxiSlvIdWidth-1:0] reg_id;
 
-  reg_req_t [RegOut.num_out-1:0] reg_out_req;
-  reg_rsp_t [RegOut.num_out-1:0] reg_out_rsp;
+  reg_req_t[RegOut.num_out-1:0] reg_out_req;
+  reg_rsp_t[RegOut.num_out-1:0] reg_out_rsp;
 
   // Shim atomics, which are not supported in reg
   // TODO: should we use a filter instead here?
@@ -557,27 +557,23 @@ module cheshire_soc import cheshire_pkg::*; #(
   //  Cores  //
   /////////////
 
-  // TODO: Implement X interface support
-
-  `CHESHIRE_TYPEDEF_AXI_CT(axi_cva6, addr_t, cva6_id_t, axi_data_t, axi_strb_t, axi_user_t)
-
-  localparam config_pkg::cva6_user_cfg_t Cva6Cfg = gen_cva6_cfg(Cfg);
-
   // Boot from boot ROM only if available, otherwise from platform ROM
   localparam logic [63:0] BootAddr = 64'(Cfg.Bootrom ? AmBrom : Cfg.PlatformRom);
 
   // Debug interface for internal harts
   dm::hartinfo_t [NumIntHarts-1:0] dbg_int_info;
   logic          [NumIntHarts-1:0] dbg_int_unavail;
-  logic          [NumIntHarts-1:0] dbg_int_req;
+  logic[NumIntHarts-1:0] dbg_int_req;
+  
+  // Wire added for Sargantana Soft Reset functionality
+  logic                            ndmreset; 
 
   // Core bus error interrupts
   axi_err_intr_t [NumIntHarts-1:0] core_bus_err_intr;
   axi_err_intr_t core_bus_err_intr_comb;
 
-  // All internal harts are CVA6 and always available
-  assign dbg_int_info     = {(NumIntHarts){ariane_pkg::DebugHartInfo}};
-  assign dbg_int_unavail  = '0;
+  // All internal harts are standard CVA6 info mapping by default
+  assign dbg_int_info = {(NumIntHarts){ariane_pkg::DebugHartInfo}};
 
   // Combine the bus error interrupts of all cores. The error units record which
   // core is responsible. This allows the cores to handle bus errors in a coordinated
@@ -590,6 +586,200 @@ module cheshire_soc import cheshire_pkg::*; #(
 
   assign intr.intn.bus_err.cores = core_bus_err_intr_comb;
 
+`ifdef CHESHIRE_USE_SARGANTANA
+  
+  // ===========================================================================
+  // SARGANTANA CORE INSTANTIATION
+  // ===========================================================================
+  
+  // -------------------------------------------------------------------------
+  // TRANSLATE CHESHIRE'S DYNAMIC MEMORY MAP INTO SARGANTANA'S CONFIG FORMAT
+  // -------------------------------------------------------------------------
+  function automatic drac_pkg::drac_cfg_t gen_sargantana_cfg(input cheshire_cfg_t cfg);
+    drac_pkg::drac_cfg_t ret = drac_pkg::DracDefaultConfig;
+    
+
+  ret.NIOSections = 2;
+  ret.InitIOBase  = {48'(cheshire_pkg::AmSpmUnc), 48'(cheshire_pkg::AmBrom)};
+  ret.InitIOEnd   = {48'(cheshire_pkg::AmSpmUnc + get_llc_size(cfg) - 1), 48'h00_0C00_0000};
+
+
+ ret.NMappedSections = 5;
+ ret.InitMappedBase = {48'(cfg.LlcOutRegionStart), 48'(cheshire_pkg::AmSpm), 
+                      48'h00_0204_0000, 48'(cheshire_pkg::AmBrom), 
+                      48'(cheshire_pkg::AmRegs)};
+ ret.InitMappedEnd  = {48'(cfg.LlcOutRegionEnd), 
+                      48'(cheshire_pkg::AmSpm + get_llc_size(cfg) - 1),
+                      48'h00_0205_0000,
+                      48'(cheshire_pkg::AmBrom + 32'h0003_FFFF), 
+                      48'(cheshire_pkg::AmRegs + 32'h0002_0000)};
+
+    ret.InitBROMBase = 48'(cheshire_pkg::AmBrom);
+    ret.InitBROMEnd  = 48'(cheshire_pkg::AmBrom + 32'h0003_FFFF);
+
+    ret.DebugProgramBufferBase = 48'(cheshire_pkg::AmDbg);
+    ret.DebugProgramBufferEnd  = 48'(cheshire_pkg::AmDbg + 32'h0003_FFFF);
+    
+    return ret;
+  endfunction
+
+  localparam drac_pkg::drac_cfg_t CHESHIRE_DRAC_CFG = gen_sargantana_cfg(Cfg);
+
+  // Sargantana debug output signals and resume request
+  logic [NumIntHarts-1:0] sarg_halted, sarg_running, sarg_resume_req;
+  logic [NumIntHarts-1:0] sarg_resume_req_latched, sarg_resume_ack;
+
+  // Latch the short 1-cycle resume pulse until Sargantana acks it!
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      sarg_resume_req_latched <= '0;
+    end else begin
+      for (int i = 0; i < NumIntHarts; i++) begin
+        if (sarg_resume_ack[i]) begin
+          sarg_resume_req_latched[i] <= 1'b0;
+        end else if (sarg_resume_req[i]) begin
+          sarg_resume_req_latched[i] <= 1'b1;
+        end
+      end
+    end
+  end
+
+  for (genvar i = 0; i < NumIntHarts; i++) begin : gen_sargantana_cores
+    
+    axi_mst_req_t core_out_req, core_ur_req;
+    axi_mst_rsp_t core_out_rsp, core_ur_rsp;
+
+    sargantana_soc_axi_wrap #(
+        .DracCfg         ( CHESHIRE_DRAC_CFG ),
+        .AxiAddrWidth    ( Cfg.AddrWidth    ),
+        .AxiDataWidth    ( Cfg.AxiDataWidth ),
+        .AxiUserWidth    ( Cfg.AxiUserWidth ),
+        .SlvIdWidth      ( 8 ),
+        .MstIdWidth      ( Cfg.AxiMstIdWidth ), 
+        .SerMaxTxns      ( Cfg.CoreMaxTxns ),
+        .SerMaxUniqIds   ( 2 ** Cfg.AxiMstIdWidth ),
+        .SerMaxTxnsPerId ( Cfg.CoreMaxTxnsPerId )
+    ) i_core_sargantana (
+        .clk_i         ( clk_i ),
+        .rstn_i        ( rst_ni ),
+        // MUST correctly hook up ndmreset! Active low via inversion
+        .soft_rstn_i   ( rst_ni & ~ndmreset ), 
+        .reset_addr_i  ( BootAddr ), 
+        .core_id_i     ( 64'(i) ),
+
+        .time_i        ( 64'd0 ), 
+        .time_irq_i    ( mtip[i] ),
+        .soft_irq_i    ( msip[i] ),
+        .irq_i         ( {xeip[i].s, xeip[i].m} ), 
+        .io_core_pmu_l2_hit_i ( 1'b0 ),
+
+        .debug_contr_halt_req_i      ( dbg_int_req[i]      ),
+        .debug_contr_resume_req_i    ( sarg_resume_req_latched[i] ), // Use latched req
+        .debug_contr_progbuf_req_i   ( 1'b0 ),
+        .debug_contr_halt_on_reset_i ( 1'b0 ),
+        .debug_reg_rnm_read_en_i     ( 1'b0 ),
+        .debug_reg_rnm_read_reg_i    ( '0 ),
+        .debug_reg_rf_en_i           ( 1'b0 ),
+        .debug_reg_rf_preg_i         ( '0 ),
+        .debug_reg_rf_we_i           ( 1'b0 ),
+        .debug_reg_rf_wdata_i        ( '0 ),
+
+        .debug_contr_halt_ack_o      (  ),
+        .debug_contr_halted_o        ( sarg_halted[i]  ),
+        .debug_contr_resume_ack_o    ( sarg_resume_ack[i] ),
+        .debug_contr_running_o       ( sarg_running[i] ),
+        .debug_contr_progbuf_ack_o   (  ),
+        .debug_contr_parked_o        (  ),
+        .debug_contr_unavail_o       (  ),
+        .debug_contr_progbuf_xcpt_o  (  ),
+        .debug_contr_havereset_o     (  ),
+        .debug_reg_rnm_read_resp_o   (  ),
+        .debug_reg_rf_rdata_o        (  ),
+        .visa_o                      (  ),
+
+        .axi_mst_ar_valid_o ( core_out_req.ar_valid ), .axi_mst_ar_ready_i ( core_out_rsp.ar_ready ),
+        .axi_mst_ar_addr_o  ( core_out_req.ar.addr  ), .axi_mst_ar_id_o    ( core_out_req.ar.id    ),
+        .axi_mst_ar_len_o   ( core_out_req.ar.len   ), .axi_mst_ar_size_o  ( core_out_req.ar.size  ),
+        .axi_mst_ar_burst_o ( core_out_req.ar.burst ), .axi_mst_ar_lock_o  ( core_out_req.ar.lock  ),
+        .axi_mst_ar_cache_o ( core_out_req.ar.cache ), .axi_mst_ar_prot_o  ( core_out_req.ar.prot  ),
+        .axi_mst_ar_qos_o   ( core_out_req.ar.qos   ), .axi_mst_ar_region_o( core_out_req.ar.region),
+        .axi_mst_ar_user_o  ( core_out_req.ar.user  ),
+        .axi_mst_r_valid_i  ( core_out_rsp.r_valid  ), .axi_mst_r_ready_o  ( core_out_req.r_ready  ),
+        .axi_mst_r_data_i   ( core_out_rsp.r.data   ), .axi_mst_r_id_i     ( core_out_rsp.r.id     ),
+        .axi_mst_r_last_i   ( core_out_rsp.r.last   ), .axi_mst_r_resp_i   ( core_out_rsp.r.resp   ),
+        .axi_mst_r_user_i   ( core_out_rsp.r.user   ),
+        .axi_mst_aw_valid_o ( core_out_req.aw_valid ), .axi_mst_aw_ready_i ( core_out_rsp.aw_ready ),
+        .axi_mst_aw_addr_o  ( core_out_req.aw.addr  ), .axi_mst_aw_id_o    ( core_out_req.aw.id    ),
+        .axi_mst_aw_len_o   ( core_out_req.aw.len   ), .axi_mst_aw_size_o  ( core_out_req.aw.size  ),
+        .axi_mst_aw_burst_o ( core_out_req.aw.burst ), .axi_mst_aw_lock_o  ( core_out_req.aw.lock  ),
+        .axi_mst_aw_cache_o ( core_out_req.aw.cache ), .axi_mst_aw_prot_o  ( core_out_req.aw.prot  ),
+        .axi_mst_aw_qos_o   ( core_out_req.aw.qos   ), .axi_mst_aw_region_o( core_out_req.aw.region),
+        .axi_mst_aw_user_o  ( core_out_req.aw.user  ), .axi_mst_aw_atop_o  ( core_out_req.aw.atop  ),
+        .axi_mst_w_valid_o  ( core_out_req.w_valid  ), .axi_mst_w_ready_i  ( core_out_rsp.w_ready  ),
+        .axi_mst_w_data_o   ( core_out_req.w.data   ), .axi_mst_w_strb_o   ( core_out_req.w.strb   ),
+        .axi_mst_w_last_o   ( core_out_req.w.last   ), .axi_mst_w_user_o   ( core_out_req.w.user   ),
+        .axi_mst_b_valid_i  ( core_out_rsp.b_valid  ), .axi_mst_b_ready_o  ( core_out_req.b_ready  ),
+        .axi_mst_b_id_i     ( core_out_rsp.b.id     ), .axi_mst_b_resp_i   ( core_out_rsp.b.resp   ),
+        .axi_mst_b_user_i   ( core_out_rsp.b.user   )
+    );
+
+    if (Cfg.BusErr) begin : gen_sargantana_bus_err
+      axi_err_unit_wrap #(
+        .AddrWidth          ( Cfg.AddrWidth ),
+        .IdWidth            ( Cfg.AxiMstIdWidth ),
+        .UserErrBits        ( Cfg.AxiUserErrBits ),
+        .UserErrBitsOffset  ( Cfg.AxiUserErrLsb ),
+        .NumOutstanding     ( Cfg.CoreMaxTxns ),
+        .NumStoredErrors    ( 4 ),
+        .DropOldest         ( 1'b0 ),
+        .axi_req_t          ( axi_mst_req_t ),
+        .axi_rsp_t          ( axi_mst_rsp_t ),
+        .reg_req_t          ( reg_req_t ),
+        .reg_rsp_t          ( reg_rsp_t )
+      ) i_sargantana_bus_err (
+        .clk_i,
+        .rst_ni,
+        .testmode_i ( test_mode_i ),
+        .axi_req_i  ( core_out_req ),
+        .axi_rsp_i  ( core_out_rsp ),
+        .err_irq_o  ( core_bus_err_intr[i] ),
+        .reg_req_i  ( reg_out_req[RegOut.bus_err[RegBusErrCoresBase+i]] ),
+        .reg_rsp_o  ( reg_out_rsp[RegOut.bus_err[RegBusErrCoresBase+i]] )
+      );
+    end else begin : gen_no_sargantana_bus_err
+      assign core_bus_err_intr[i] = '0;
+    end
+
+    always_comb begin
+      core_ur_req         = core_out_req;
+      core_ur_req.aw.user = Cfg.AxiUserDefault;
+      core_ur_req.ar.user = Cfg.AxiUserDefault;
+      core_ur_req.w.user  = Cfg.AxiUserDefault;
+      core_ur_req.aw.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
+      core_ur_req.ar.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
+      core_ur_req.w.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb]  = Cfg.CoreUserAmoOffs + i;
+      core_out_rsp        = core_ur_rsp;
+    end
+
+    assign axi_in_req[AxiIn.cores[i]] = core_ur_req;
+    assign core_ur_rsp                = axi_in_rsp[AxiIn.cores[i]];
+
+  end
+ 
+  assign dbg_int_unavail = '0;
+`else
+
+  // ===========================================================================
+  // ORIGINAL CVA6 CORE INSTANTIATION
+  // ===========================================================================
+
+  // CVA6 does not output halted signals natively in the old wrap
+  assign dbg_int_unavail = '0;
+
+  `CHESHIRE_TYPEDEF_AXI_CT(axi_cva6, addr_t, cva6_id_t, axi_data_t, axi_strb_t, axi_user_t)
+
+  localparam config_pkg::cva6_user_cfg_t Cva6Cfg = gen_cva6_cfg(Cfg);
+
   for (genvar i = 0; i < NumIntHarts; i++) begin : gen_cva6_cores
     axi_cva6_req_t core_out_req, core_ur_req;
     axi_cva6_rsp_t core_out_rsp, core_ur_rsp;
@@ -598,7 +788,7 @@ module cheshire_soc import cheshire_pkg::*; #(
     logic clic_irq_valid, clic_irq_ready;
     logic clic_irq_kill_req, clic_irq_kill_ack;
     logic clic_irq_shv;
-    logic [$clog2(NumClicIntrs)-1:0] clic_irq_id;
+    logic[$clog2(NumClicIntrs)-1:0] clic_irq_id;
     logic [7:0]        clic_irq_level;
     riscv::priv_lvl_t  clic_irq_priv;
     logic              clic_irq_v;
@@ -622,7 +812,6 @@ module cheshire_soc import cheshire_pkg::*; #(
       .ipi_i            ( msip[i] ),
       .time_irq_i       ( mtip[i] ),
       .debug_req_i      ( dbg_int_req[i] ),
-`ifdef TARGET_PULP
       .clic_irq_valid_i ( clic_irq_valid ),
       .clic_irq_id_i    ( clic_irq_id    ),
       .clic_irq_level_i ( clic_irq_level ),
@@ -633,7 +822,6 @@ module cheshire_soc import cheshire_pkg::*; #(
       .clic_irq_ready_o ( clic_irq_ready ),
       .clic_kill_req_i  ( clic_irq_kill_req ),
       .clic_kill_ack_o  ( clic_irq_kill_ack ),
-`endif
       .rvfi_probes_o    ( ),
       .cvxif_req_o      ( ),
       .cvxif_resp_i     ( '0 ),
@@ -664,6 +852,8 @@ module cheshire_soc import cheshire_pkg::*; #(
         .reg_req_i  ( reg_out_req[RegOut.bus_err[RegBusErrCoresBase+i]] ),
         .reg_rsp_o  ( reg_out_rsp[RegOut.bus_err[RegBusErrCoresBase+i]] )
       );
+    end else begin : gen_no_cva6_bus_err
+      assign core_bus_err_intr[i] = '0;
     end
 
     // Generate CLIC for core if enabled
@@ -732,9 +922,9 @@ module cheshire_soc import cheshire_pkg::*; #(
       core_ur_req.aw.user = Cfg.AxiUserDefault;
       core_ur_req.ar.user = Cfg.AxiUserDefault;
       core_ur_req.w.user  = Cfg.AxiUserDefault;
-      core_ur_req.aw.user [Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
-      core_ur_req.ar.user [Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
-      core_ur_req.w.user  [Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
+      core_ur_req.aw.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
+      core_ur_req.ar.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
+      core_ur_req.w.user[Cfg.AxiUserAmoMsb:Cfg.AxiUserAmoLsb] = Cfg.CoreUserAmoOffs + i;
       core_out_rsp        = core_ur_rsp;
     end
 
@@ -766,6 +956,8 @@ module cheshire_soc import cheshire_pkg::*; #(
     );
   end
 
+`endif
+
   /////////////////////////
   //  JTAG Debug Module  //
   /////////////////////////
@@ -781,7 +973,7 @@ module cheshire_soc import cheshire_pkg::*; #(
   logic          [NumDbgHarts-1:0] dbg_unavail;
   logic          [NumDbgHarts-1:0] dbg_req;
 
-  // Debug module slave interface
+  // Debug module slave interface (final, muxed  drives dm_top)
   logic       dbg_slv_req;
   addr_t      dbg_slv_addr;
   axi_data_t  dbg_slv_addr_long;
@@ -790,6 +982,17 @@ module cheshire_soc import cheshire_pkg::*; #(
   axi_strb_t  dbg_slv_wstrb;
   axi_data_t  dbg_slv_rdata;
   logic       dbg_slv_rvalid;
+
+  // Intermediate slave signals from AXI-to-mem (before bridge MUX)
+  logic       axi2mem_dbg_slv_req;
+  addr_t      axi2mem_dbg_slv_addr;
+  logic       axi2mem_dbg_slv_we;
+  axi_data_t  axi2mem_dbg_slv_wdata;
+  axi_strb_t  axi2mem_dbg_slv_wstrb;
+
+  // Bridge injection control
+  logic       brg_inject;
+  addr_t      brg_inject_addr;
 
   // Debug module system bus access interface
   logic       dbg_sba_req;
@@ -811,8 +1014,7 @@ module cheshire_soc import cheshire_pkg::*; #(
   logic           dbg_dmi_rsp_ready, dbg_dmi_rsp_valid;
 
   // Truncate and pad addresses as necessary
-  assign dbg_sba_addr       = dbg_sba_addr_long;
-  assign dbg_slv_addr_long  = dbg_slv_addr;
+  assign dbg_sba_addr = dbg_sba_addr_long;
 
   // Connect internal harts to debug interface
   assign dbg_info    [NumIntHarts-1:0] = dbg_int_info;
@@ -821,8 +1023,8 @@ module cheshire_soc import cheshire_pkg::*; #(
 
   // Connect external harts to debug interface
   if (Cfg.NumExtDbgHarts != 0) begin : gen_dbg_ext
-    assign dbg_info    [NumDbgHarts-1:NumIntHarts] = ExtHartinfo;
-    assign dbg_unavail [NumDbgHarts-1:NumIntHarts] = dbg_ext_unavail_i;
+    assign dbg_info[NumDbgHarts-1:NumIntHarts] = ExtHartinfo;
+    assign dbg_unavail[NumDbgHarts-1:NumIntHarts] = dbg_ext_unavail_i;
     assign dbg_ext_req_o = dbg_req[NumDbgHarts-1:NumIntHarts];
   end else begin : gen_no_dbg_ext
     assign dbg_ext_req_o = '0;
@@ -870,7 +1072,7 @@ module cheshire_soc import cheshire_pkg::*; #(
     .mst_resp_i ( dbg_slv_axi_cut_rsp )
   );
 
-  // AXI access to debug module
+  // AXI access to debug module  outputs to intermediate signals
   axi_to_mem_interleaved #(
     .axi_req_t  ( axi_slv_req_t ),
     .axi_resp_t ( axi_slv_rsp_t ),
@@ -886,19 +1088,106 @@ module cheshire_soc import cheshire_pkg::*; #(
     .busy_o       ( ),
     .axi_req_i    ( dbg_slv_axi_cut_req ),
     .axi_resp_o   ( dbg_slv_axi_cut_rsp ),
-    .mem_req_o    ( dbg_slv_req    ),
-    .mem_gnt_i    ( dbg_slv_req    ),
-    .mem_addr_o   ( dbg_slv_addr   ),
-    .mem_wdata_o  ( dbg_slv_wdata  ),
-    .mem_strb_o   ( dbg_slv_wstrb  ),
+    .mem_req_o    ( axi2mem_dbg_slv_req              ),
+    .mem_gnt_i    ( axi2mem_dbg_slv_req & ~brg_inject ),
+    .mem_addr_o   ( axi2mem_dbg_slv_addr              ),
+    .mem_wdata_o  ( axi2mem_dbg_slv_wdata             ),
+    .mem_strb_o   ( axi2mem_dbg_slv_wstrb             ),
     .mem_atop_o   ( ),
-    .mem_we_o     ( dbg_slv_we     ),
+    .mem_we_o     ( axi2mem_dbg_slv_we                ),
     .mem_rvalid_i ( dbg_slv_rvalid ),
     .mem_rdata_i  ( dbg_slv_rdata  )
   );
 
-  // Read response is valid one cycle after request
-  `FF(dbg_slv_rvalid, dbg_slv_req, 1'b0, clk_i, rst_ni)
+  // Read response valid: 1 cycle after a granted AXI-to-mem request
+  `FF(dbg_slv_rvalid, axi2mem_dbg_slv_req & ~brg_inject, 1'b0, clk_i, rst_ni)
+
+  // -------------------------------------------------------------------------
+  // SARGANTANA HALT/RESUME BRIDGE
+  // -------------------------------------------------------------------------
+`ifdef CHESHIRE_USE_SARGANTANA
+
+  logic sarg_halted_q, sarg_running_q;
+  logic sarg_halt_rise, sarg_run_rise;
+
+  // Rising edge detection on halted and running
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) begin
+      sarg_halted_q  <= 1'b0;
+      sarg_running_q <= 1'b0;
+    end else begin
+      sarg_halted_q  <= sarg_halted[0];
+      sarg_running_q <= sarg_running[0];
+    end
+  end
+
+  assign sarg_halt_rise = sarg_halted[0]  & ~sarg_halted_q;
+  assign sarg_run_rise  = sarg_running[0] & ~sarg_running_q;
+
+  // Bridge FSM: one-cycle injection on halt or resume
+  typedef enum logic [1:0] {
+    BRG_IDLE, BRG_HALTED, BRG_RUNNING
+  } brg_state_e;
+
+  brg_state_e brg_q, brg_d;
+
+  always_ff @(posedge clk_i or negedge rst_ni) begin
+    if (!rst_ni) brg_q <= BRG_IDLE;
+    else         brg_q <= brg_d;
+  end
+
+  always_comb begin
+    brg_d = BRG_IDLE;
+    case (brg_q)
+      BRG_IDLE:    if (sarg_halt_rise) brg_d = BRG_HALTED;
+                   else if (sarg_run_rise) brg_d = BRG_RUNNING;
+      BRG_HALTED:  brg_d = BRG_IDLE;  // 1-cycle pulse
+      BRG_RUNNING: brg_d = BRG_IDLE;  // 1-cycle pulse
+      default:     brg_d = BRG_IDLE;
+    endcase
+  end
+
+  assign brg_inject      = (brg_q == BRG_HALTED) | (brg_q == BRG_RUNNING);
+  assign brg_inject_addr = (brg_q == BRG_HALTED) ?
+                           addr_t'(AmDbg + 'h100) :   // dm::HaltedAddress
+                           addr_t'(AmDbg + 'h110);    // dm::ResumingAddress
+
+  // Snoop DMI for DMControl write with resumereq=1 ? forward to Sargantana
+  assign sarg_resume_req[0] = dbg_dmi_req_valid      &
+                              dbg_dmi_req_ready       &
+                              (dbg_dmi_req.op   == dm::DTM_WRITE) &
+                              (dbg_dmi_req.addr == 7'h10)         &
+                              dbg_dmi_req.data[30];  // resumereq bit
+
+  for (genvar i = 1; i < NumIntHarts; i++) begin : gen_sarg_resume_tie
+    assign sarg_resume_req[i] = 1'b0;
+  end
+
+`else
+
+  // CVA6: bridge is transparent
+  assign brg_inject      = 1'b0;
+  assign brg_inject_addr = '0;
+
+`endif
+
+  // Slave interface MUX: bridge has priority over AXI-to-mem
+  always_comb begin
+    if (brg_inject) begin
+      dbg_slv_req   = 1'b1;
+      dbg_slv_we    = 1'b1;
+      dbg_slv_addr  = brg_inject_addr;
+      dbg_slv_wdata = '0;
+      dbg_slv_wstrb = '1;
+    end else begin
+      dbg_slv_req   = axi2mem_dbg_slv_req;
+      dbg_slv_we    = axi2mem_dbg_slv_we;
+      dbg_slv_addr  = axi2mem_dbg_slv_addr;
+      dbg_slv_wdata = axi2mem_dbg_slv_wdata;
+      dbg_slv_wstrb = axi2mem_dbg_slv_wstrb;
+    end
+    dbg_slv_addr_long = axi_data_t'(dbg_slv_addr);
+  end
 
   // Debug Module
   dm_top #(
@@ -909,7 +1198,7 @@ module cheshire_soc import cheshire_pkg::*; #(
     .clk_i,
     .rst_ni,
     .testmode_i           ( test_mode_i ),
-    .ndmreset_o           ( ),
+    .ndmreset_o           ( ndmreset      ),
     .dmactive_o           ( dbg_active_o  ),
     .debug_req_o          ( dbg_req       ),
     .unavailable_i        ( dbg_unavail   ),
@@ -1498,8 +1787,6 @@ module cheshire_soc import cheshire_pkg::*; #(
   ///////////////////
   //  Serial Link  //
   ///////////////////
-
-  // TODO: connect isolation IO properly
 
   if(Cfg.SerialLink) begin : gen_serial_link
 
