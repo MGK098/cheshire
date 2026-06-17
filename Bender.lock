@@ -101,10 +101,10 @@ packages:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
   core_tile:
-    revision: null
+    revision: 7cda9f00fbdc7abf2074836dfd2dbe1c74014378
     version: null
     source:
-      Path: /srv/home/muhammad.ghassan/Downloads/core_tile_bendrized/core_tile
+      Git: https://github.com/MGK098/core_tile_benderized.git
     dependencies:
     - axi
     - common_cells
