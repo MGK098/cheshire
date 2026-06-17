@@ -8,7 +8,7 @@
 // Thomas Benz <tbenz@iis.ee.ethz.ch>
 // Alessandro Ottaviano <aottaviano@iis.ee.ethz.ch>
 `include "hpdcache_typedef.svh"
-module cheshire_soc import cheshire_pkg::*; import drac_pkg::*, sargantana_icache_pkg::*, mmu_pkg::*; #(
+module cheshire_soc import cheshire_pkg::*;  #(
   // Cheshire config
   parameter cheshire_cfg_t Cfg = '0,
   // Debug info for external harts
@@ -587,6 +587,8 @@ module cheshire_soc import cheshire_pkg::*; import drac_pkg::*, sargantana_icach
   assign intr.intn.bus_err.cores = core_bus_err_intr_comb;
 
 `ifdef CHESHIRE_USE_SARGANTANA
+
+import drac_pkg::*, sargantana_icache_pkg::*, mmu_pkg::*;
   
   // ===========================================================================
   // SARGANTANA CORE INSTANTIATION
@@ -812,6 +814,7 @@ module cheshire_soc import cheshire_pkg::*; import drac_pkg::*, sargantana_icach
       .ipi_i            ( msip[i] ),
       .time_irq_i       ( mtip[i] ),
       .debug_req_i      ( dbg_int_req[i] ),
+`ifdef TARGET_PULP
       .clic_irq_valid_i ( clic_irq_valid ),
       .clic_irq_id_i    ( clic_irq_id    ),
       .clic_irq_level_i ( clic_irq_level ),
@@ -822,6 +825,7 @@ module cheshire_soc import cheshire_pkg::*; import drac_pkg::*, sargantana_icach
       .clic_irq_ready_o ( clic_irq_ready ),
       .clic_kill_req_i  ( clic_irq_kill_req ),
       .clic_kill_ack_o  ( clic_irq_kill_ack ),
+`endif
       .rvfi_probes_o    ( ),
       .cvxif_req_o      ( ),
       .cvxif_resp_i     ( '0 ),

@@ -1661,4 +1661,5 @@ if {[catch { vlog -incr -sv \
     "$ROOT/target/sim/src/tb_cheshire_soc.sv" \
 }]} {return 1}
 
-vlog "/srv/home/muhammad.ghassan/Cheshire/lorenzo_cheshire/target/sim/src/elfloader.cpp" -ccflags "-std=c++11" -cpppath "/usr/lib64/ccache/g++"
+set SARG_ROOT [file normalize [file join [file dirname [info script]] ../../..]]
+vlog "$SARG_ROOT/target/sim/src/elfloader.cpp" -ccflags "-std=c++11" -cpppath "/usr/lib64/ccache/g++"
