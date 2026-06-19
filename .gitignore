@@ -54,3 +54,5 @@ target/xilinx/out
 target/xilinx/scripts/add_sources.*
 vivado*
 Bender.local
+target/sim/models/
+target/sim/src/elfloader.so
