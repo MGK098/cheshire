@@ -50,7 +50,6 @@ if { [info exists USE_DRAMSYS] } {
 
 # tclint-disable-next-line command-args
 set SCRIPT_ROOT [file normalize [file join [file dirname [info script]] ../../..]]
-append flags "-sv_lib $SCRIPT_ROOT/target/sim/src/elfloader "
 eval "vsim -c ${TESTBENCH} -t 1ps -vopt -voptargs=\"${VOPTARGS}\"" ${pargs} ${flags}
 
 set StdArithNoWarnings 1
