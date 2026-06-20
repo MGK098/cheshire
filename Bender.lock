@@ -104,7 +104,7 @@ packages:
     revision: 76c282c0c8fa2a44f6d769edf584cdf7d5f02b73
     version: null
     source:
-      Git: https://github.com/MGK098/core_tile_benderized.git
+      Git: https://github.com/MGK098/core_tile.git
     dependencies:
     - axi
     - common_cells
