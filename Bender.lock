@@ -101,7 +101,7 @@ packages:
       Git: https://github.com/pulp-platform/common_verification.git
     dependencies: []
   core_tile:
-    revision: c697c36436a86d98a3b0d13ab4215781383d52dc
+    revision: cc2c63ebe8ff01fcd1d3726adea620b41d3f88c7
     version: null
     source:
       Git: https://github.com/MGK098/core_tile.git
