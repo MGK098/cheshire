@@ -4,14 +4,25 @@
 //
 // Max Wipfli <mwipfli@student.ethz.ch>
 
+`ifndef CHS_CORE
+  `define CHS_CORE_CVA6
+`endif
+
 function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
   cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
+`ifdef CHS_CORE_C910
   ret.Core           = cheshire_pkg::C910;
   ret.AddrWidth      = 40;
   ret.AxiDataWidth   = 64;
   ret.AxiMaxMstTrans = 76;
   ret.AxiMstIdWidth  = 8;
   ret.AxiUserWidth   = 2;
+`elsif CHS_CORE_SARGANTANA
+  ret.Core = cheshire_pkg::SARGANTANA;
+`else
+  // Default: CVA6
+  ret.Core = cheshire_pkg::CVA6;
+`endif
   return ret;
 endfunction
 

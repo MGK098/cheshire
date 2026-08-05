@@ -18,6 +18,16 @@ CHS_VERILATOR_UART_BAUD ?= 115200
 VERILATOR_WNO   = -Wno-fatal -Wno-style \
 	-Wno-BLKANDNBLK -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-WIDTHCONCAT -Wno-ASCRANGE -Wno-ENUMVALUE
 VERILATOR_ARGS  ?= -j 0 -Wall $(VERILATOR_WNO) -timescale 1ns/1ps --no-timing
+
+# Core selection: CVA6 (default), SARGANTANA, C910
+# Usage: make CHS_CORE=C910  or  make CHS_CORE=SARGANTANA
+CHS_CORE ?= CVA6
+ifeq ($(CHS_CORE),C910)
+  VERILATOR_ARGS += -DCHS_CORE_C910
+else ifeq ($(CHS_CORE),SARGANTANA)
+  VERILATOR_ARGS += -DCHS_CORE_SARGANTANA
+endif
+# CVA6 is the default (no define needed)
 # UART baud rate
 VERILATOR_ARGS += -GUartBaudRate=$(CHS_VERILATOR_UART_BAUD)
 # Verilation optimizations
