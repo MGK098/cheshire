@@ -6,7 +6,12 @@
 
 function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
   cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
-  ret.Core = cheshire_pkg::SARGANTANA;
+  ret.Core           = cheshire_pkg::C910;
+  ret.AddrWidth      = 40;
+  ret.AxiDataWidth   = 64;
+  ret.AxiMaxMstTrans = 76;
+  ret.AxiMstIdWidth  = 8;
+  ret.AxiUserWidth   = 2;
   return ret;
 endfunction
 

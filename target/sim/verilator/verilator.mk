@@ -17,7 +17,7 @@ CHS_VERILATOR_UART_BAUD ?= 115200
 # Silly Verilator warnings: these are perfectly valid and should not be warnings
 VERILATOR_WNO   = -Wno-fatal -Wno-style \
 	-Wno-BLKANDNBLK -Wno-WIDTHEXPAND -Wno-WIDTHTRUNC -Wno-WIDTHCONCAT -Wno-ASCRANGE -Wno-ENUMVALUE
-VERILATOR_ARGS  ?= -j 0 -Wall $(VERILATOR_WNO) -timescale 1ns/1ps
+VERILATOR_ARGS  ?= -j 0 -Wall $(VERILATOR_WNO) -timescale 1ns/1ps --no-timing
 # UART baud rate
 VERILATOR_ARGS += -GUartBaudRate=$(CHS_VERILATOR_UART_BAUD)
 # Verilation optimizations
