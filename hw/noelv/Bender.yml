@@ -170,6 +170,7 @@ sources:
   - files:
       - jtag_tap_wrap.vhd
       - noelv_chs_wrap.vhd
+      - noelv_chs_wrap.v
       - noelv_chs_axi_wrap.sv
 
   - target: all(fpga, xilinx)

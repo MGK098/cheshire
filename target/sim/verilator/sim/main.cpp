@@ -3,7 +3,9 @@
 #include <memory> // std::unique_ptr
 
 #include <verilated.h> // common Verilator routines
-#if VM_TRACE
+#if VM_TRACE_FST
+#include <verilated_fst_c.h> // trace to FST
+#elif VM_TRACE
 #include <verilated_vcd_c.h> // trace to VCD
 #endif
 
@@ -258,9 +260,15 @@ int main(int argc, char** argv) {
 
 #if VM_TRACE
     Verilated::traceEverOn(true);
+#if VM_TRACE_FST
+    const auto trace = std::make_unique<VerilatedFstC>();
+    topp->trace(trace.get(), 5);
+    trace->open("dump.fst");
+#else
     const auto trace = std::make_unique<VerilatedVcdC>();
     topp->trace(trace.get(), 5);
     trace->open("dump.vcd");
+#endif
 #endif
 
     // Initial Inputs

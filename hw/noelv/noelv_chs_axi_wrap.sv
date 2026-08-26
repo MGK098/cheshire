@@ -28,16 +28,9 @@ module noelv_chs_axi_wrap #(
     output logic            jtag_tdo_oe_o
 );
 
-  noelv_chs_wrap #(
-      .AddrWidth(AddrWidth),
-      .DataWidth(DataWidth),
-      .IdWidth  (IdWidth),
-      .UserWidth(UserWidth),
-      .manf     (IdcodeValue[11:1]),
-      .part     (IdcodeValue[27:12]),
-      .ver      (IdcodeValue[31:28]),
-      .tech     (Tech)
-  ) i_noelv_chs_wrap (
+  // noelv_chs_wrap is a synthesized netlist with no parameters.
+  // Port widths are fixed: AddrWidth=48, DataWidth=64, IdWidth=4, UserWidth=2
+  noelv_chs_wrap i_noelv_chs_wrap (
       .clk_i,
       .rst_ni,
 

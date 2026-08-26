@@ -8,26 +8,34 @@
   `define CHS_CORE_CVA6
 `endif
 
-function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg();
+function automatic cheshire_pkg::cheshire_cfg_t gen_cheshire_cfg(int unsigned selcfg);
   cheshire_pkg::cheshire_cfg_t ret = cheshire_pkg::DefaultCfg;
-`ifdef CHS_CORE_C910
-  ret.Core           = cheshire_pkg::C910;
-  ret.AddrWidth      = 40;
-  ret.AxiDataWidth   = 64;
-  ret.AxiMaxMstTrans = 76;
-  ret.AxiMstIdWidth  = 8;
-  ret.AxiUserWidth   = 2;
-`elsif CHS_CORE_SARGANTANA
-  ret.Core = cheshire_pkg::SARGANTANA;
-`else
-  // Default: CVA6
-  ret.Core = cheshire_pkg::CVA6;
-`endif
+  // selcfg=0: CVA6 (default), selcfg=1: Sargantana, selcfg=4: C910
+  case (selcfg)
+    1: begin // Sargantana
+      ret.Core = cheshire_pkg::SARGANTANA;
+    end
+    4: begin // C910
+      ret.Core           = cheshire_pkg::C910;
+      ret.AddrWidth      = 40;
+      ret.AxiDataWidth   = 64;
+      ret.AxiMaxMstTrans = 76;
+      ret.AxiMstIdWidth  = 8;
+      ret.AxiUserWidth   = 2;
+    end
+    5: begin // NOELV (netlist: AddrWidth=48, DataWidth=64, IdWidth=4, UserWidth=2)
+      ret.Core = cheshire_pkg::NOELV;
+    end
+    default: begin // CVA6 (selcfg=0)
+      ret.Core = cheshire_pkg::CVA6;
+    end
+  endcase
   return ret;
 endfunction
 
 module cheshire_soc_wrapper # (
-  parameter cheshire_pkg::cheshire_cfg_t DutCfg       = gen_cheshire_cfg(),
+  parameter int unsigned                 SelectedCfg  = 0,
+  parameter cheshire_pkg::cheshire_cfg_t DutCfg       = gen_cheshire_cfg(SelectedCfg),
   parameter int unsigned                 UartBaudRate = 115200
 ) (
   input logic clk_i,

@@ -5,6 +5,8 @@
 # Max Wipfli <mwipfli@student.ethz.ch>
 # Paul Scheffler <paulsc@iis.ee.ethz.ch>
 
+SELCFG ?= 0
+
 CHS_VERILATOR_DIR ?= $(CHS_ROOT)/target/sim/verilator
 RISCV_DBG_DIR = $(shell bender path riscv-dbg)
 
@@ -25,21 +27,27 @@ CHS_CORE ?= CVA6
 ifeq ($(CHS_CORE),C910)
   VERILATOR_ARGS += -DCHS_CORE_C910
 else ifeq ($(CHS_CORE),SARGANTANA)
-  VERILATOR_ARGS += -DCHS_CORE_SARGANTANA
+  # SARG_BYPASS_LSQ: mirrors QuestaSim's VLOG_ARGS (+define+SARG_BYPASS_LSQ)
+  # between QuestaSim and Verilator flows for valid performance comparisons.
+  VERILATOR_ARGS += -DCHS_CORE_SARGANTANA -DSARG_BYPASS_LSQ -DSIM_COMMIT_LOG
 endif
 # CVA6 is the default (no define needed)
+
 # UART baud rate
 VERILATOR_ARGS += -GUartBaudRate=$(CHS_VERILATOR_UART_BAUD)
+
 # Verilation optimizations
 VERILATOR_ARGS += -O3 --x-assign fast --x-initial fast --noassert
+
 # Disable common_cells assertions
 VERILATOR_ARGS += -DASSERTS_OFF
-# Disable CVA6 instruction tracer
-VERILATOR_ARGS += --trace
+
 # multithreading
 VERILATOR_ARGS += --threads $(CHS_VERILATOR_THREADS)
+
 # C++ Compiler Optimization
 VERILATOR_ARGS += -CFLAGS "-O3" -CFLAGS "-march=native" -CFLAGS "-mtune=native"
+
 # Use Clang (faster simulation than GCC)
 VERILATOR_ARGS += --compiler clang -MAKEFLAGS "CC=clang" -MAKEFLAGS "CXX=clang++" -MAKEFLAGS "LINK=clang++"
 
@@ -58,9 +66,12 @@ VERILATOR_ARGS +=
 # generates `gmon.out` that can be processed by `gprof` and then `verilator_profcfunc`
 # VERILATOR_ARGS += --prof-cfuncs --report-unoptflat
 
-# Tracing
-# enables VCD tracing of the topmost 5 layers
-# VERILATOR_ARGS += --trace --trace-structs --no-trace-top --trace-depth 5
+# Tracing (FST): enabled for all cores except NOELV (SELCFG=5), which is VHDL-based
+# and cannot be traced through this Verilator flow.
+CHS_VERILATOR_TRACE_DEPTH ?= 5
+ifneq ($(SELCFG),5)
+  VERILATOR_ARGS += --trace-fst --trace-structs --trace-depth $(CHS_VERILATOR_TRACE_DEPTH)
+endif
 
 VERILATOR_CXX_SRCS = $(CHS_VERILATOR_DIR)/sim/main.cpp \
 	$(CHS_ROOT)/target/sim/src/elfloader.cpp \
@@ -69,8 +80,22 @@ VERILATOR_CXX_SRCS = $(CHS_VERILATOR_DIR)/sim/main.cpp \
 
 VERILATOR_CONFIG = $(CHS_VERILATOR_DIR)/config.vlt
 
+# Core-specific bender tags and Verilator config parameter
+ifeq ($(SELCFG),1)
+  CHS_BENDER_EXTRA_FLAGS += -t sargantana
+endif
+ifeq ($(SELCFG),4)
+  CHS_BENDER_EXTRA_FLAGS += -t c910
+endif
+ifeq ($(SELCFG),5)
+  CHS_BENDER_EXTRA_FLAGS += -t noelv
+endif
+ifdef SELCFG
+  VERILATOR_ARGS += -GSelectedCfg=$(SELCFG)
+endif
+
 $(CHS_VERILATOR_DIR)/cheshire_soc.flist: $(CHS_ROOT)/Bender.yml
-	$(BENDER) script verilator $(CHS_BENDER_RTL_FLAGS) > $@
+	$(BENDER) script verilator $(CHS_BENDER_RTL_FLAGS) $(CHS_BENDER_EXTRA_FLAGS) > $@
 
 $(CHS_ROOT)/target/sim/verilator/obj_dir/Vcheshire_soc_wrapper: $(CHS_ROOT)/target/sim/verilator/cheshire_soc.flist $(VERILATOR_CXX_SRCS) $(VERILATOR_CONFIG)
 	+cd $(CHS_VERILATOR_DIR) && $(VERILATOR_PREFIX) $(VERILATOR) $(VERILATOR_ARGS) \
@@ -83,4 +108,3 @@ $(CHS_ROOT)/target/sim/verilator/cheshire_soc.vlt: $(CHS_ROOT)/target/sim/verila
 	@echo 'cd $$(dirname "$$0")' >> $@
 	@echo 'taskset -c 0-$(shell expr $(CHS_VERILATOR_THREADS) - 1) $(VERILATOR_PREFIX) ./obj_dir/Vcheshire_soc_wrapper "$$@"' >> $@
 	@chmod +x $@
-
